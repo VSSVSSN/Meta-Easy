@@ -186,3 +186,25 @@ A simple function to hopefully make life easier!
     end
     
     This code sets the weather to "EXTRASUNNY" and the time to 12:00 PM using the SetWeatherTypeNowPersist() and NetworkOverrideClockTime() functions respectively. It then loads all the weather.meta files using the loadMeta() function and loops through each file, finding the "weather" element with the name "EXTRASUNNY". It then finds the "hour" and "minute" elements within that "weather" element and sets the time to those values using NetworkOverrideClockTime().
+    
+    Example 11:
+    local arcadeIPL = "hei_dlc_arcade"
+local props = {
+    "apa_mp_apa_arcade_plaque_01a",
+    "apa_mp_apa_arcade_plaque_01b",
+    "apa_mp_apa_arcade_plaque_01c",
+    "apa_mp_apa_arcade_plaque_02a",
+    "apa_mp_apa_arcade_plaque_02b",
+    -- add more props here as needed
+}
+
+local metaPaths = loadMeta(arcadeIPL, true, true)
+
+for _, path in ipairs(metaPaths) do
+    if path:find("hei_dlc_arcade") and path:find("interiors") and path:find("v_") then
+        for _, prop in ipairs(props) do
+            loadObject(prop, path)
+        end
+    end
+end
+
