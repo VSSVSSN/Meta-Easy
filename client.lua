@@ -57,23 +57,22 @@ function loadMeta(metaType, isInterior, isIPL)
             searchPath = searchPath .. "data\\"
         end
         
-        if metaType == "shop_clothes" then
-            findMetaFiles(searchPath, "shop_clothes.meta$", metaPaths, "gender", "item", "id")
-        elseif metaType == "vehicles" then
-            findMetaFiles(searchPath, "vehicles.meta$", metaPaths, "handlingName", "modelName", "type")
-        elseif metaType == "carcols" then
-            findMetaFiles(searchPath, "carcols.meta$", metaPaths, "modelName", "colorType", "id")
-        elseif metaType == "carvariations" then
-            findMetaFiles(searchPath, "carvariations.meta$", metaPaths, "modelName", "variationName", "type")
-        elseif metaType == "handling" then
-            findMetaFiles(searchPath, "handling.meta$", metaPaths, "handlingName", "attributeName", "type")
-        elseif metaType == "weapons" then
-            findMetaFiles(searchPath, "weapons.meta$", metaPaths, "weaponName", "componentName", "type")
-        elseif metaType == "animations" then
-            findMetaFiles(searchPath, "anim\\*.meta", metaPaths, "AnimSet", "ClipSet", "Name")
+        local metaTypes = {
+            shop_clothes = {"shop_clothes.meta$", "gender", "item", "id"},
+            vehicles = {"vehicles.meta$", "handlingName", "modelName", "type"},
+            carcols = {"carcols.meta$", "modelName", "colorType", "id"},
+            carvariations = {"carvariations.meta$", "modelName", "variationName", "type"},
+            handling = {"handling.meta$", "handlingName", "attributeName", "type"},
+            weapons = {"weapons.meta$", "weaponName", "componentName", "type"},
+            animations = {"anim\\*.meta", "AnimSet", "ClipSet", "Name"}
+        }
+
+        for metaTypeName, metaTypeParams in pairs(metaTypes) do
+            if metaType == metaTypeName then
+                findMetaFiles(searchPath, metaTypeParams[1], metaPaths, metaTypeParams[2], metaTypeParams[3], metaTypeParams[4])
+            end
         end
     end
-    
     return metaPaths
 end
 
