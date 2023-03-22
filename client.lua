@@ -4,8 +4,6 @@ function loadMeta(metaType, isInterior, isIPL)
     local searchPaths = {
         "citizen\\common\\data\\",
         "citizen\\platform\\data\\",
-        "update\\update.rpf\\",
-        "update\\x64\\dlcpacks\\",
         "mpheist3\\mpheist3.rpf\\",
         "mpheist\\mpheist.rpf\\",
         "mpbusiness2\\mpbusiness2.rpf\\",
@@ -22,6 +20,25 @@ function loadMeta(metaType, isInterior, isIPL)
         "mpvalentines2\\mpvalentines2.rpf\\",
         "mpxmas2\\mpxmas2.rpf\\"
     }
+    
+    -- Find all RPF files in the update folder and its subfolders
+    local updateFiles = {}
+    local updatePath = "update\\"
+    local function findUpdateFiles(path)
+        for _, fileName in ipairs(listFiles(path)) do
+            if fileName:sub(-4) == ".rpf" then
+                table.insert(updateFiles, path .. fileName)
+            elseif fileName:sub(-1) == "\\" then
+                findUpdateFiles(path .. fileName)
+            end
+        end
+    end
+    findUpdateFiles(updatePath)
+    
+    -- Add update files to search paths
+    for _, updateFile in ipairs(updateFiles) do
+        table.insert(searchPaths, updateFile)
+    end
 
     for _, searchPath in ipairs(searchPaths) do
         if isInterior then
