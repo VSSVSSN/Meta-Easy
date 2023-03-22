@@ -65,13 +65,14 @@ function loadMeta(metaType, isInterior, isIPL)
             handling = {"handling.meta$", "handlingName", "attributeName", "type"},
             weapons = {"weapons.meta$", "weaponName", "componentName", "type"},
             animations = {"anim\\*.meta", "AnimSet", "ClipSet", "Name"},
-            tattoos = {"palettes\\tattoo_shop.meta", "zone", "palette", "hash"},
-            hairstyles = {"peds\\streamedpeds_mp.meta", "id", "drawable", "texture"},
-            makeup = {"palettes\\makeup_shop.meta", "zone", "palette", "hash"}
+            cutscenes = {"cutscenes.meta", "cutName", "animName", "animDict"}
         }
 
         for metaTypeName, metaTypeParams in pairs(metaTypes) do
             if metaType == metaTypeName then
+                if metaType == "cutscenes" then
+                findMetaFiles(searchPath, metaTypeParams[1], metaPaths, metaTypeParams[2], metaTypeParams[3], metaTypeParams[4], true)
+            else
                 findMetaFiles(searchPath, metaTypeParams[1], metaPaths, metaTypeParams[2], metaTypeParams[3], metaTypeParams[4])
             end
         end
