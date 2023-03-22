@@ -116,3 +116,13 @@ function fileExists(resourceName, fileName)
         return false
     end
 end
+
+function findClipSetForAnimSet(animSet)
+    local metaPaths = loadMeta("animations")
+    for _, meta in ipairs(metaPaths) do
+        if meta.AnimSet == animSet and meta.Name == "default" then
+            return meta.ClipSet
+        end
+    end
+    return nil
+end
