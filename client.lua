@@ -78,6 +78,14 @@ function findMetaFiles(path, pattern, metaPaths, ...)
                     meta[field] = value
                 end
             end
+
+            if metaType == "animations" and meta["AnimSet"] == animSet then
+                local clipSet = meta["ClipSet"]
+                if clipSet then
+                    meta["ClipSet"] = string.gsub(clipSet, "clipset_", "")
+                end
+            end
+
             meta.path = file
             table.insert(metaPaths, meta)
         end
