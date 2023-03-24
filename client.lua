@@ -1,6 +1,16 @@
-function loadMeta(metaType, isInterior, isIPL)
+function loadMeta(metaType, isInterior, isIPL, metaDataTable, vehiclesTable)
     local metaPaths = {}
-    
+
+    -- metaTypes table to specify the parameters for each type of metadata
+    local metaTypes = {
+        vehicles = {"vehicles.meta$", "handlingName", "modelName", "type"},
+        handling = {"handling.meta$", "handlingName", "attributeName", "type"},
+        carcols = {"carcols.meta$", "modelName", "colorType", "colorIndex"},
+        carvariations = {"carvariations.meta$", "modelName", "variationName", "variationValue"},
+        vehiclelayouts = {"vehiclelayouts.meta$", "modelName", "layoutName", "layoutValue"}
+    }
+
+    -- Add search paths for metadata
     local searchPaths = {
         "citizen\\common\\data\\",
         "citizen\\platform\\data\\",
@@ -20,30 +30,49 @@ function loadMeta(metaType, isInterior, isIPL)
         "mpvalentines2\\mpvalentines2.rpf\\",
         "mpxmas2\\mpxmas2.rpf\\"
     }
-    
-    -- Find all RPF files in the update folder and its subfolders
-    local updateFiles = {}
-    local updatePath = "update\\"
-    local function findUpdateFiles(path)
-        for _, fileName in ipairs(listFiles(path)) do
-            if fileName:sub(-4) == ".rpf" then
-                table.insert(updateFiles, path .. fileName)
-            elseif fileName:sub(-1) == "\\" then
-                findUpdateFiles(path .. fileName)
-            end
-        end
-    end
-    findUpdateFiles(updatePath)
-    
+
     -- Add update files to search paths
+    local updatePath = "update\\"
+    local updateFiles = listFilesRecursive(updatePath, ".rpf")
     for _, updateFile in ipairs(updateFiles) do
-        table.insert(searchPaths, updateFile)
+        table.insert(searchPaths, updatePath .. updateFile)
     end
 
+    -- Find meta files in search paths
     for _, searchPath in ipairs(searchPaths) do
-        if isInterior then
-            searchPath = searchPath .. "x64\\levels\\gta5\\interiors\\"SRP = SRP or {}
-SRP.MetaData = {}
+        local metaTypeParams = metaTypes[metaType]
+        if metaTypeParams then
+            local metaFile = searchPath .. (isInterior and "x64\\levels\\gta5\\interiors\\" or "") .. (isIPL and "x64w.rpf\\levels\\gta5\\_cityw\\_cityw_10\\cityw_10_props.rpf\\" or "") .. "data\\" .. metaTypeParams[1]
+            if fileExists(metaFile) then
+                local metaXml = LoadResourceFile(GetCurrentResourceName(), metaFile)
+                local metaNodes = GetXmlNodes(metaXml, "Item")
+                for _, metaNode in ipairs(metaNodes) do
+                    local metaItem = {}
+                    metaItem[metaTypeParams[2]] = GetXmlString(metaNode, metaTypeParams[2])
+                    metaItem[metaTypeParams[3]] = GetXmlString(metaNode, metaTypeParams[3])
+                    metaItem[metaTypeParams[4]] = GetXmlString(metaNode, metaTypeParams[4])
+                    if metaType == "vehicles" then
+                        -- Add handling, carcols, carvariations, and vehiclelayouts meta data to the vehicles table
+                        for subMetaType, subMetaParams in pairs(metaTypes) do
+                           
+					if subMetaType ~= "vehicles" then
+						local subMetaTable = {}
+						for _, metaItem in ipairs(metaDataTable[subMetaType]) do
+							if metaItem[subMetaParams[2]] == vehData[2] then
+								local subMeta = {}
+								subMeta[subMetaParams[3]] = metaItem[subMetaParams[3]]
+								subMeta[subMetaParams[4]] = metaItem[subMetaParams[4]]
+								table.insert(subMetaTable, subMeta)
+							end
+						end
+					if next(subMetaTable) ~= nil then
+						vehicles[vehData[2]][subMetaType] = subMetaTable
+					end
+				end
+			end
+		end
+	end
+end
 
 AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     deferrals.defer()
