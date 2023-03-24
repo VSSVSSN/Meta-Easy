@@ -1,4 +1,4 @@
-function loadMeta(metaType, isInterior, isIPL, metaDataTable, vehiclesTable)
+function loadMeta(metaDataTable)
     local metaPaths = {}
 
     -- metaTypes table to specify the parameters for each type of metadata
@@ -40,9 +40,8 @@ function loadMeta(metaType, isInterior, isIPL, metaDataTable, vehiclesTable)
 
     -- Find meta files in search paths
     for _, searchPath in ipairs(searchPaths) do
-        local metaTypeParams = metaTypes[metaType]
-        if metaTypeParams then
-            local metaFile = searchPath .. (isInterior and "x64\\levels\\gta5\\interiors\\" or "") .. (isIPL and "x64w.rpf\\levels\\gta5\\_cityw\\_cityw_10\\cityw_10_props.rpf\\" or "") .. "data\\" .. metaTypeParams[1]
+        for metaType, metaTypeParams in pairs(metaTypes) do
+            local metaFile = searchPath .. metaTypeParams[1]
             if fileExists(metaFile) then
                 local metaXml = LoadResourceFile(GetCurrentResourceName(), metaFile)
                 local metaNodes = GetXmlNodes(metaXml, "Item")
@@ -51,27 +50,14 @@ function loadMeta(metaType, isInterior, isIPL, metaDataTable, vehiclesTable)
                     metaItem[metaTypeParams[2]] = GetXmlString(metaNode, metaTypeParams[2])
                     metaItem[metaTypeParams[3]] = GetXmlString(metaNode, metaTypeParams[3])
                     metaItem[metaTypeParams[4]] = GetXmlString(metaNode, metaTypeParams[4])
-                    if metaType == "vehicles" then
-                        -- Add handling, carcols, carvariations, and vehiclelayouts meta data to the vehicles table
-                        for subMetaType, subMetaParams in pairs(metaTypes) do
-                           
-					if subMetaType ~= "vehicles" then
-						local subMetaTable = {}
-						for _, metaItem in ipairs(metaDataTable[subMetaType]) do
-							if metaItem[subMetaParams[2]] == vehData[2] then
-								local subMeta = {}
-								subMeta[subMetaParams[3]] = metaItem[subMetaParams[3]]
-								subMeta[subMetaParams[4]] = metaItem[subMetaParams[4]]
-								table.insert(subMetaTable, subMeta)
-							end
-						end
-					if next(subMetaTable) ~= nil then
-						vehicles[vehData[2]][subMetaType] = subMetaTable
-					end
-				end
-			end
-		end
-	end
+                    if not metaDataTable[metaType] then
+                        metaDataTable[metaType] = {}
+                    end
+                    table.insert(metaDataTable[metaType], metaItem)
+                end
+            end
+        end
+    end
 end
 
 AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
