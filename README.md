@@ -1,6 +1,32 @@
 # Meta-Easy
 A simple function to hopefully make life easier!
 
+Below is an example of how to use this. This is included in the file. It loads all meta data into a table so the data can easily be called.
+
+This should be removed and implemented into your existing server code.
+
+MetaData = {}
+
+AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
+    deferrals.defer()
+
+    -- load metadata and store it in SRP.MetaData
+    local metaType = "vehicles"
+    local isInterior = false
+    local isIPL = false
+    loadMeta(metaType, isInterior, isIPL, SRP.MetaData)
+
+    -- show player progress
+    deferrals.update("Loading metadata...")
+    
+    -- defer until metadata is loaded
+    Citizen.CreateThread(function()
+        while #MetaData == 0 do
+            Citizen.Wait(0)
+        end
+        deferrals.done()
+    end)
+end)
 
     Example 1: Loading clothing shop metadata
     
