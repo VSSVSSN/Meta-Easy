@@ -1,4 +1,6 @@
-function loadMeta(metaDataTable)
+MetaData = {}
+
+function loadMeta(metaType, isInterior, isIPL, metaDataTable)
     local metaPaths = {}
 
     -- metaTypes table to specify the parameters for each type of metadata
@@ -10,26 +12,19 @@ function loadMeta(metaDataTable)
         vehiclelayouts = {"vehiclelayouts.meta$", "modelName", "layoutName", "layoutValue"}
     }
 
-    -- Add search paths for metadata
-    local searchPaths = {
-        "citizen\\common\\data\\",
-        "citizen\\platform\\data\\",
-        "mpheist3\\mpheist3.rpf\\",
-        "mpheist\\mpheist.rpf\\",
-        "mpbusiness2\\mpbusiness2.rpf\\",
-        "mpbusiness\\mpbusiness.rpf\\",
-        "mpexecutive\\mpexecutive.rpf\\",
-        "mpgunrunning\\mpgunrunning.rpf\\",
-        "mphalloween\\mphalloween.rpf\\",
-        "mplowrider\\mplowrider.rpf\\",
-        "mpluxe\\mpluxe.rpf\\",
-        "mpluxe2\\mpluxe2.rpf\\",
-        "mpluxeapartments\\mpluxeapartments.rpf\\",
-        "mpsmuggler\\mpsmuggler.rpf\\",
-        "mpstunt\\mpstunt.rpf\\",
-        "mpvalentines2\\mpvalentines2.rpf\\",
-        "mpxmas2\\mpxmas2.rpf\\"
-    }
+    -- Set search paths for metadata
+    local searchPaths = {}
+
+    if isInterior then
+        table.insert(searchPaths, "interiors\\" .. metaType .. "\\")
+    end
+
+    if isIPL then
+        table.insert(searchPaths, "ipl\\" .. metaType .. "\\")
+    end
+
+    table.insert(searchPaths, "citizen\\common\\data\\")
+    table.insert(searchPaths, "citizen\\platform\\data\\")
 
     -- Add update files to search paths
     local updatePath = "update\\"
@@ -67,6 +62,7 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     local metaType = "vehicles"
     local isInterior = false
     local isIPL = false
+    SRP.MetaData = {}
     loadMeta(metaType, isInterior, isIPL, SRP.MetaData)
 
     -- show player progress
@@ -74,77 +70,41 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     
     -- defer until metadata is loaded
     Citizen.CreateThread(function()
-        while #SRP.MetaData == 0 do
+        while #MetaData[metaType] == 0 do
             Citizen.Wait(0)
         end
         deferrals.done()
     end)
 end)
 
-function findMetaFiles(path, pattern, metaPaths, ...)
+function findMetaFiles(path, pattern, metaPaths, metaType, animSet)
     local files = {}
     Citizen.InvokeNative(0x5F695EEF92862B22, path) -- STREAMING::OPEN_PACKFILE
 
     while true do
         local file = Citizen.InvokeNative(0x3D593694C6B0D5CD) -- STREAMING::GET_PACKFILE_FILE_INFO
-        if not file then
+
+        if file ~= "" then
+            if string.match(file, pattern) then
+                local metaPath = path .. "/" .. file
+                if not metaPaths[metaType] then
+                    metaPaths[metaType] = {}
+                end
+                table.insert(metaPaths[metaType], metaPath)
+            end
+            if string.match(file, animSet) then
+                table.insert(files, path .. "/" .. file)
+            end
+        else
             break
-        end
-
-        if string.match(file, pattern) then
-            local meta = {}
-            for _, field in ipairs({...}) do
-                local value = string.match(file, field .. "_(%w+)")
-                if value then
-                    meta[field] = value
-                end
-            end
-
-            if metaType == "animations" and meta["AnimSet"] == animSet then
-                local clipSet = meta["ClipSet"]
-                if clipSet then
-                    meta["ClipSet"] = string.gsub(clipSet, "clipset_", "")
-                end
-            end
-
-            -- Extract spawn locations
-            if metaType == "vehicles" or metaType == "weapons" then
-                local spawnLocations = {}
-                local metaXml = LoadResourceFile(GetCurrentResourceName(), path .. file)
-                local xmlRoot = xml.load(metaXml)
-                if metaType == "vehicles" then
-                    local spawnNodes = xmlRoot:findNodes("handlingData/spawnInfo/spawnName")
-                    for _, spawnNode in ipairs(spawnNodes) do
-                        local spawnName = xmlNodeGetValue(spawnNode)
-                        if spawnName then
-                            table.insert(spawnLocations, spawnName)
-                        end
-                    end
-                elseif metaType == "weapons" then
-                    local spawnNodes = xmlRoot:findNodes("WeaponDatas/WeaponData/Components/Component/Clip/Item")
-                    for _, spawnNode in ipairs(spawnNodes) do
-                        local spawnName = xmlNodeGetAttribute(spawnNode, "clipName")
-                        if spawnName then
-                            table.insert(spawnLocations, spawnName)
-                        end
-                    end
-                end
-            elseif metaType == "vehiclelayouts" then
-                local layoutName = string.match(file, "layout_(%w+)")
-                if layoutName then
-                    meta["layoutName"] = layoutName
-                end
-            end
-                meta.spawnLocations = spawnLocations
-            end
-
-            meta.path = file
-            table.insert(metaPaths, meta)
         end
     end
 
-    Citizen.InvokeNative(0x02A8BEC6FD91BCE3) -- STREAMING::CLOSE_PACKFILE
+    Citizen.InvokeNative(0x37D5F739FD494675, path) -- STREAMING::CLOSE_PACKFILE
+
+    return files
 end
+
 
 function listFiles(path)
     local files = {}
