@@ -1,4 +1,4 @@
-MetaData = {}
+local MetaData = {} -- initialize the MetaData table
 
 function loadMeta(metaType, isInterior, isIPL, metaDataTable)
     local metaPaths = {}
@@ -37,7 +37,7 @@ function loadMeta(metaType, isInterior, isIPL, metaDataTable)
     for _, searchPath in ipairs(searchPaths) do
         for metaType, metaTypeParams in pairs(metaTypes) do
             local metaFile = searchPath .. metaTypeParams[1]
-            if fileExists(metaFile) then
+            if fileExists(GetCurrentResourceName(), metaFile) then -- fixed this line
                 local metaXml = LoadResourceFile(GetCurrentResourceName(), metaFile)
                 local metaNodes = GetXmlNodes(metaXml, "Item")
                 for _, metaNode in ipairs(metaNodes) do
@@ -55,55 +55,53 @@ function loadMeta(metaType, isInterior, isIPL, metaDataTable)
     end
 end
 
-AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
-    deferrals.defer()
-
-    -- load metadata and store it in SRP.MetaData
-    local metaType = "vehicles"
-    local isInterior = false
-    local isIPL = false
-    SRP.MetaData = {}
-    loadMeta(metaType, isInterior, isIPL, SRP.MetaData)
-
-    -- show player progress
-    deferrals.update("Loading metadata...")
-    
-    -- defer until metadata is loaded
-    Citizen.CreateThread(function()
-        while #MetaData[metaType] == 0 do
-            Citizen.Wait(0)
-        end
-        deferrals.done()
-    end)
-end)
-
 function findMetaFiles(path, pattern, metaPaths, metaType, animSet)
     local files = {}
     Citizen.InvokeNative(0x5F695EEF92862B22, path) -- STREAMING::OPEN_PACKFILE
 
     while true do
-        local file = Citizen.InvokeNative(0x3D593694C6B0D5CD) -- STREAMING::GET_PACKFILE_FILE_INFO
-
-        if file ~= "" then
-            if string.match(file, pattern) then
-                local metaPath = path .. "/" .. file
-                if not metaPaths[metaType] then
-                    metaPaths[metaType] = {}
+        local file = Citizen.InvokeNative(0x3D593694, Citizen.ResultAsInteger()) -- STREAMING::GET_PACKFILE_FILE_INFO
+        if not file or file.name == "" then break end
+        if string.find(file.name, pattern) then
+            local fileData = LoadResourceFile(GetCurrentResourceName(), file.name)
+            if fileData then
+                if metaType == "file" then
+                    table.insert(files, {name = file.name, data = fileData})
+                elseif metaType == "table" then
+                    local fileTable = json.decode(fileData)
+                    if animSet then
+                        for _, animName in ipairs(animSet) do
+                            if fileTable[animName] then
+                                table.insert(files, {name = file.name, data = fileTable[animName]})
+                            end
+                        end
+                    else
+                        for k, v in pairs(fileTable) do
+                            table.insert(files, {name = file.name, key = k, data = v})
+                        end
+                    end
                 end
-                table.insert(metaPaths[metaType], metaPath)
             end
-            if string.match(file, animSet) then
-                table.insert(files, path .. "/" .. file)
-            end
-        else
-            break
         end
     end
 
-    Citizen.InvokeNative(0x37D5F739FD494675, path) -- STREAMING::CLOSE_PACKFILE
+    Citizen.InvokeNative(0x65E8772DA2EEC485, Citizen.ResultAsInteger()) -- STREAMING::CLOSE_PACKFILE
+
+    for _, metaPath in ipairs(metaPaths) do
+        for i = #files, 1, -1 do
+            if files[i].name:find(metaPath) then
+                local fileTable = json.decode(files[i].data)
+                for k, v in pairs(fileTable) do
+                    table.insert(files, {name = files[i].name, key = k, data = v})
+                end
+                table.remove(files, i)
+            end
+        end
+    end
 
     return files
 end
+
 
 
 function listFiles(path)
