@@ -6,7 +6,6 @@ Below is an example of how to use this. This is included in the file. It loads a
 This should be removed and implemented into your existing server code.
 
 MetaData = {}
-
 AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     deferrals.defer()
 
